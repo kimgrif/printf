@@ -1,59 +1,66 @@
-#include <stdio.h>
-#include <stdarg.h>
 #include "main.h"
 
-int global_chars_printed = 0; // Global variable to store the total characters printed
+void print_buffer(char buffer[], int *buff_ind);
 
-int _printf(const char *format, ...) {
-    va_list args;
-    va_start(args, format);
+/**
+ * _printf - Printf function
+ * @format: format.
+ * Return: Printed chars.
+ */
+int _printf(const char *format, ...)
+{
+	int i, printed = 0, printed_chars = 0;
+	int flags, width, precision, size, buff_ind = 0;
+	va_list list;
+	char buffer[BUFF_SIZE];
 
-    char c;
-    while ((c = *format++) != '\0') {
-        if (c == '%') {
-            char next_c = *format++;
-            switch (next_c) {
-                case 'c':
-                    // Print a single character
-                    putchar(va_arg(args, int));
-                    global_chars_printed++;
-                    break;
-                case 's': {
-                    // Print a string
-                    const char *str = va_arg(args, const char *);
-                    while (*str != '\0') {
-                        putchar(*str);
-                        str++;
-                        global_chars_printed++;
-                    }
-                    break;
-                }
-                case '%':
-                    // Print a literal %
-                    putchar('%');
-                    global_chars_printed++;
-                    break;
-                default:
-                    // Ignore unsupported specifiers
-                    break;
-            }
-        } else {
-            // Print regular characters
-            putchar(c);
-            global_chars_printed++;
-        }
-    }
+	if (format == NULL)
+		return (-1);
 
-    va_end(args);
-    return global_chars_printed;
+	va_start(list, format);
+
+	for (i = 0; format && format[i] != '\0'; i++)
+	{
+		if (format[i] != '%')
+		{
+			buffer[buff_ind++] = format[i];
+			if (buff_ind == BUFF_SIZE)
+				print_buffer(buffer, &buff_ind);
+			/* write(1, &format[i], 1);*/
+			printed_chars++;
+		}
+		else
+		{
+			print_buffer(buffer, &buff_ind);
+			flags = get_flags(format, &i);
+			width = get_width(format, &i, list);
+			precision = get_precision(format, &i, list);
+			size = get_size(format, &i);
+			++i;
+			printed = handle_print(format, &i, list, buffer,
+				flags, width, precision, size);
+			if (printed == -1)
+				return (-1);
+			printed_chars += printed;
+		}
+	}
+
+	print_buffer(buffer, &buff_ind);
+
+	va_end(list);
+
+	return (printed_chars);
 }
 
-int main() {
-    int num_chars_1 = _printf("This is a test: %c, %s, %c%%\n", 'A', "Hello, world!", 'B');
-    int num_chars_2 = _printf("Another test: %c, %s, %c%%\n", 'X', "Hi there!", 'Y');
+/**
+ * print_buffer - Prints the contents of the buffer if it exist
+ * @buffer: Array of chars
+ * @buff_ind: Index at which to add next char, represents the length.
+ */
+void print_buffer(char buffer[], int *buff_ind)
+{
+	if (*buff_ind > 0)
+		write(1, &buffer[0], *buff_ind);
 
-    printf("Number of characters printed in the first call: %d\n", num_chars_1);
-    printf("Number of characters printed in the second call: %d\n", num_chars_2);
-    printf("Total number of characters printed: %d\n", global_chars_printed);
-    return 0;
+	*buff_ind = 0;
 }
