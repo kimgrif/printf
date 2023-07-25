@@ -1,66 +1,100 @@
 #include "main.h"
-
-void print_buffer(char buffer[], int *buff_ind);
+#include <stdio.h>
+#include <stdarg.h>
 
 /**
- * _printf - Printf function
- * @format: format.
- * Return: Printed chars.
+ * _putchar - A custom function to print a single character
+ * @c: The character to be printed
  */
-int _printf(const char *format, ...)
+void _putchar(char c)
 {
-	int i, printed = 0, printed_chars = 0;
-	int flags, width, precision, size, buff_ind = 0;
-	va_list list;
-	char buffer[BUFF_SIZE];
-
-	if (format == NULL)
-		return (-1);
-
-	va_start(list, format);
-
-	for (i = 0; format && format[i] != '\0'; i++)
-	{
-		if (format[i] != '%')
-		{
-			buffer[buff_ind++] = format[i];
-			if (buff_ind == BUFF_SIZE)
-				print_buffer(buffer, &buff_ind);
-			/* write(1, &format[i], 1);*/
-			printed_chars++;
-		}
-		else
-		{
-			print_buffer(buffer, &buff_ind);
-			flags = get_flags(format, &i);
-			width = get_width(format, &i, list);
-			precision = get_precision(format, &i, list);
-			size = get_size(format, &i);
-			++i;
-			printed = handle_print(format, &i, list, buffer,
-				flags, width, precision, size);
-			if (printed == -1)
-				return (-1);
-			printed_chars += printed;
-		}
-	}
-
-	print_buffer(buffer, &buff_ind);
-
-	va_end(list);
-
-	return (printed_chars);
+    putchar(c);
 }
 
 /**
- * print_buffer - Prints the contents of the buffer if it exist
- * @buffer: Array of chars
- * @buff_ind: Index at which to add next char, represents the length.
+ * handle_char - A helper function to handle the 'c' specifier
+ * and print a single character.
  */
-void print_buffer(char buffer[], int *buff_ind)
+int handle_char(va_list args)
 {
-	if (*buff_ind > 0)
-		write(1, &buffer[0], *buff_ind);
+    char c = va_arg(args, int);
+    _putchar(c);
+    return 1;
+}
 
-	*buff_ind = 0;
+/**
+ * handle_string - A helper function to handle the 's' specifier
+ * and print a string.
+ */
+int handle_string(va_list args)
+{
+    const char *str = va_arg(args, const char *);
+    int count = 0;
+
+    while (*str)
+    {
+        _putchar(*str);
+        str++;
+        count++;
+    }
+    return count;
+}
+
+/**
+ * handle_percent - A helper function to handle the '%%' specifier
+ * and print a literal '%'.
+ */
+int handle_percent(va_list args)
+{
+    (void)args; // Unused parameter
+    _putchar('%');
+    return 1;
+}
+
+/**
+ * _printf - A function that prints the formatted output to stdout
+ * @format: The format string containing the conversion specifiers
+ * Return: The number of characters printed (excluding the null byte)
+ */
+int _printf(const char *format, ...)
+{
+    int count = 0;
+    va_list args;
+
+    va_start(args, format);
+    if (!format || !format[0])
+        return -1;
+
+    while (*format)
+    {
+        if (*format == '%')
+        {
+            format++;
+            switch (*format)
+            {
+            case 'c':
+                count += handle_char(args);
+                break;
+            case 's':
+                count += handle_string(args);
+                break;
+            case '%':
+                count += handle_percent(args);
+                break;
+            default:
+                _putchar(*format);
+                count++;
+                break;
+            }
+        }
+        else
+        {
+            _putchar(*format);
+            count++;
+        }
+        format++;
+    }
+
+    va_end(args);
+    return count;
 }
